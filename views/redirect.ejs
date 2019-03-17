@@ -1,0 +1,21 @@
+<html>
+<body>
+
+<!--<h1> Received  <%= accessTokens.accessToken %></h1>-->
+<script>
+    // window.postMessage(accessTokens, location.origin);
+    // var bc = new BroadcastChannel('auth-channel');
+    // bc.postMessage({'token': accessTokens})
+
+    // const channel = new MessageChannel();
+
+    window.addEventListener("load", onLoad);
+    function onLoad() {
+        console.log('loaded');
+        var channel = new MessageChannel();
+        const port = channel.port2;
+channel.port1.onmessage=(e)=>{e.data}
+    }
+</script>
+</body>
+</html>
