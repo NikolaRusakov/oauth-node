@@ -1,13 +1,24 @@
-import {Request, Response, Application, Router} from "express";
+import {Request, Response, Application} from "express";
 import passport from 'passport';
 
-const fs = require('fs')
+var admin = require("firebase-admin");
+var serviceAccount = require('./../../service-account.json');
 
-// import {OAuth2Strategy} from 'passport-oauth2';
-const OAuth2Strategy = require('passport-oauth2');
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    apiKey: '',
+    authDomain: '',
+    databaseURL: '',
+    projectId: '',
+    storageBucket: '',
+    messagingSenderId: '',
+});
+
+// const OAuth2Strategy = require('passport-oauth2');
 
 // @ts-ignore
-import {auth} from "../../src/auth";
+import auth from "../../src/auth/auth.ts";
 
 auth.setUrl('http://localhost');
 
@@ -30,6 +41,7 @@ export class Routes {
 
             passport.authenticate('oauth2', (err, user) => {
                 console.log(user);
+
                 if (err) {
                     return next(err);
                 }
@@ -37,20 +49,65 @@ export class Routes {
                     console.log(req.query.error);
                 }
                 if (!user) {
-                    console.log('doesn exist');
-                    // console.log(user);
+                    console.log('doesn\'t exist');
                 }
-                console.log(user.accessToken, user.refreshToken);
 
-                const accessTokens = {
-                    accessToken: user.accessToken,
-                    refreshToken: user.refreshToken
+
+                admin.auth().getUser(user.accessToken).then(function (userRecord: any) {
+                    console.log("Successfully fetched user data:", userRecord.toJSON());
+                    console.log(userRecord.uid);
+                    admin.auth().createCustomToken(userRecord.uid)
+                        .then(function (customToken: any) {
+                            res.redirect(302, `${process.env.APP_URL}/token-redirect/${customToken}`)
+                        })
+                        .catch(function (error: any) {
+                            console.log("Error creating custom token:", error);
+                        });
+
+                }).catch(() => {
+                    const displayName = user.first_name && user.last_name ?
+                        `${user.first_name} ${user.last_name}` : user.username;
+
+                    admin.auth().createUser({
+                        uid: user.accessToken,
+                        email: user.email,
+                        emailVerified: true,
+                        displayName: displayName,
+                        disabled: false
+                    }).then((userRecord: any) => {
+                            console.log("Successfully created new user:", userRecord.uid);
+                            admin.auth().createCustomToken(userRecord.uid)
+                                .then(function (customToken: any) {
+                                    res.redirect(302, `${process.env.APP_URL}/token-redirect/${customToken}`)
+                                })
+                                .catch(function (error: any) {
+                                    console.log("Error creating custom token:", error);
+                                });
+                        }
+                    )
+                });
+                /*
+                let accessToken = {
+                    token: ''
                 };
 
-                // res.render('redirect', {accessTokens});
-                console.log(process.env.APP_URL);
-                res.redirect(302, `${process.env.APP_URL}/token-redirect/${accessTokens.accessToken}`)
 
+                admin.auth().getUser()
+                const authRef = db.collection('mm-auth').doc(`${user.id}`);
+                authRef.get()
+                    .then((doc: any) => {
+                        if (!doc.exists) {
+                            authRef.set(user);
+                            accessToken = {...accessToken, token: user.accessToken}
+                        } else {
+                            console.log(doc.data());
+                            accessToken = {...accessToken, token: user.accessToken}
+                        }
+                    })
+                    .catch((err: any) => {
+                        console.log('Error getting document', err);
+                    });
+*/
             })(req, res, next)
         })
     }

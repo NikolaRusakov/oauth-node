@@ -46,21 +46,30 @@ var MmAuth = {
             }). catch((err) => {
                 done(err);
             });
+           /* mattermost.getMe().then((data: any) => {
+                done(null, data);
+            }).catch((err: any) => {
+                done(err);
+            });*/
         };
 
         passport.use(oauth2Strategy);
     }
 };
 
-passport.serializeUser((user: any, done: (arg0: null, arg1: any) => void) => {
+passport.serializeUser((user, done) => {
     done(null, user);
 });
 
-passport.deserializeUser((user: any, done: (arg0: null, arg1: any) => void) => {
+passport.deserializeUser((user, done) => {
     done(null, user);
 });
 
-export const AuthStrategy =
+export const AuthStrategy = /* {
+    url: '',
+    setUrl(mattermostUrl = '') {
+        this.url = mattermostUrl;
+*/
     new OAuth2Strategy({
         authorizationURL: `${process.env.MATTERMOST_URL}/oauth/authorize`,
         tokenURL: `${process.env.MATTERMOST_URL}/oauth/access_token`,
@@ -73,6 +82,17 @@ export const AuthStrategy =
         profile.refreshToken = refreshToken;
         return cb(null, profile);
     });
+
+/*  oauth2Strategy.userProfile = (accessToken, done) => {
+      mattermost.setUrl(AuthStrategy.url);
+      mattermost.setToken(accessToken);
+      mattermost.getMe().then((data) => {
+          done(null, data);
+      }).catch((err) => {
+          done(err);
+      });
+  };
+  */
 
 export const auth = {
     url: '',
